@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plataforma de Investigación Académica</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="logo-icon">🎓</span>
+        <span class="brand-title">Estudio Académico Multidisciplinario</span>
+      </div>
+      <nav class="nav-links">
+        <button id="btn-view-student" class="nav-btn active" onclick="switchView('estudiante')">Encuesta</button>
+        <button id="btn-view-admin" class="nav-btn" onclick="switchView('admin')">Administración</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- VISTA ESTUDIANTE / PARTICIPANTE -->
+    <section id="view-estudiante" class="card fade-in">
+      <div class="card-header">
+        <h2>Formulario de Recolección de Datos</h2>
+        <p class="subtitle">Agradecemos su valiosa participación en este proyecto de investigación universitaria.</p>
+      </div>
+
+      <form id="poll-form">
+        <div class="form-group">
+          <label for="student-name">Nombre completo del participante <span class="required">*</span></label>
+          <input type="text" id="student-name" required placeholder="Ej. Ana Martínez" autocomplete="name">
+        </div>
+
+        <div class="divider"></div>
+
+        <div id="questions-container">
+          <!-- Preguntas dinámicas -->
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="btn-submit">
+          Registrar Respuestas
+        </button>
+      </form>
+
+      <!-- Mensaje de confirmación y Audio -->
+      <div id="thank-you-message" class="hidden feedback-card">
+        <div class="success-icon">✓</div>
+        <h3>¡Respuestas Registradas Exitosamente!</h3>
+        <p>Agradecemos profundamente tu tiempo y colaboración para este estudio académico.</p>
+
+        <!-- Elemento de Audio opcional al finalizar -->
+        <div class="audio-player-container">
+          <p class="audio-label">🎵 Mensaje de audio de agradecimiento:</p>
+          <audio id="survey-audio" controls preload="auto">
+            <source src="audio.mp3" type="audio/mpeg">
+            Tu navegador no soporta el reproductor de audio.
+          </audio>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA ADMINISTRADOR -->
+    <section id="view-admin" class="card hidden fade-in">
+      <div class="card-header">
+        <h2>Panel de Administración de Preguntas</h2>
+        <p class="subtitle">Gestión local de las preguntas de la encuesta.</p>
+      </div>
+
+      <!-- Autenticación Admin -->
+      <div id="admin-auth" class="auth-box">
+        <div class="form-group">
+          <label for="admin-pass">Contraseña de acceso:</label>
+          <input type="password" id="admin-pass" placeholder="Ingresa la clave de administrador">
+        </div>
+        <button onclick="loginAdmin()" class="btn btn-secondary">Ingresar al Panel</button>
+      </div>
+
+      <!-- Panel de Control Admin -->
+      <div id="admin-panel" class="hidden">
+        <div class="admin-actions">
+          <h3>Crear Nueva Pregunta</h3>
+          
+          <div class="form-group">
+            <label for="q-text">Texto de la pregunta:</label>
+            <input type="text" id="q-text" placeholder="Ej. ¿Qué factores considera determinantes?">
+          </div>
+
+          <div class="form-group">
+            <label for="q-type">Tipo de respuesta:</label>
+            <select id="q-type" onchange="toggleOptionsInput()">
+              <option value="abierta">Texto abierto (Respuesta larga)</option>
+              <option value="seleccion">Selección múltiple (Opción única)</option>
+            </select>
+          </div>
+
+          <div class="form-group hidden" id="options-group">
+            <label for="q-options">Opciones de respuesta (separadas por coma):</label>
+            <input type="text" id="q-options" placeholder="Opción A, Opción B, Opción C">
+          </div>
+
+          <button onclick="addQuestion()" class="btn btn-success">Guardar Pregunta</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <h3>Preguntas Actualmente Configuradas</h3>
+        <ul id="admin-questions-list" class="questions-list"></ul>
+
+        <button onclick="clearAllQuestions()" class="btn btn-danger btn-block">
+          Eliminar Todas las Preguntas
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>© 2026 Plataforma Académica de Investigación. Todos los derechos reservados.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
