@@ -3,6 +3,10 @@ const EMAILJS_PUBLIC_KEY = "qoQ8H1CxNqzUmihFW";
 const EMAILJS_SERVICE_ID = "service_wl58pms";
 const EMAILJS_TEMPLATE_ID = "template_ddxuw8z";
 
+// ===== CONFIGURACIÓN JSONBIN (NUBE) =====
+const JSONBIN_BIN_ID = "6a67db2bf5f4af5e29ca33d3";
+const JSONBIN_MASTER_KEY = "$2a$10$jeatA89HqzJB/Co/naO1Z.7peyWb/OURz.26nLWmIkzXA.PrvtCay";
+
 // Inicializar EmailJS
 (function() {
   if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY) {
@@ -13,12 +17,57 @@ const EMAILJS_TEMPLATE_ID = "template_ddxuw8z";
 // Clave para el Panel Administrador
 const ADMIN_PASSWORD = "1234";
 
-// Cargar preguntas guardadas en LocalStorage
-let questions = JSON.parse(localStorage.getItem('survey_questions')) || [];
+let questions = [];
 
+// Cargar preguntas desde la Nube al abrir la página
 document.addEventListener('DOMContentLoaded', () => {
-  renderStudentQuestions();
+  fetchQuestionsFromCloud();
 });
+
+function fetchQuestionsFromCloud() {
+  const container = document.getElementById('questions-container');
+  if (container) {
+    container.innerHTML = '<p class="subtitle" style="text-align:center;">Cargando encuesta...</p>';
+  }
+
+  fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+    headers: {
+      'X-Master-Key': JSONBIN_MASTER_KEY
+    }
+  })
+  .then(res => res.json())
+  .then(data => {
+    questions = data.record || [];
+    renderStudentQuestions();
+  })
+  .catch(err => {
+    console.error("Error al cargar preguntas de la nube:", err);
+    if (container) {
+      container.innerHTML = '<p class="subtitle" style="text-align:center; color: red;">Error al cargar preguntas. Revisa la conexión.</p>';
+    }
+  });
+}
+
+// Guardar/Actualizar preguntas en la Nube
+function saveQuestionsToCloud(updatedQuestions, callback) {
+  fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Master-Key': JSONBIN_MASTER_KEY
+    },
+    body: JSON.stringify(updatedQuestions)
+  })
+  .then(res => res.json())
+  .then(data => {
+    questions = updatedQuestions;
+    if (callback) callback();
+  })
+  .catch(err => {
+    console.error("Error al guardar en la nube:", err);
+    alert("Error al sincronizar con la nube.");
+  });
+}
 
 // Cambiar entre Vista Estudiante y Vista Administrador
 function switchView(view) {
@@ -32,7 +81,7 @@ function switchView(view) {
     adminSec.classList.add('hidden');
     btnStudent.classList.add('active');
     btnAdmin.classList.remove('active');
-    renderStudentQuestions();
+    fetchQuestionsFromCloud();
   } else {
     studentSec.classList.add('hidden');
     adminSec.classList.remove('hidden');
@@ -83,21 +132,21 @@ function addQuestion() {
   }
 
   const newQuestion = { id: Date.now(), text, type, options };
-  questions.push(newQuestion);
-  localStorage.setItem('survey_questions', JSON.stringify(questions));
+  const updatedList = [...questions, newQuestion];
 
-  // Limpiar inputs
-  document.getElementById('q-text').value = '';
-  document.getElementById('q-options').value = '';
-
-  renderAdminQuestions();
-  alert('Pregunta guardada con éxito.');
+  saveQuestionsToCloud(updatedList, () => {
+    document.getElementById('q-text').value = '';
+    document.getElementById('q-options').value = '';
+    renderAdminQuestions();
+    alert('Pregunta guardada y sincronizada en la nube con éxito.');
+  });
 }
 
 function deleteQuestion(id) {
-  questions = questions.filter(q => q.id !== id);
-  localStorage.setItem('survey_questions', JSON.stringify(questions));
-  renderAdminQuestions();
+  const updatedList = questions.filter(q => q.id !== id);
+  saveQuestionsToCloud(updatedList, () => {
+    renderAdminQuestions();
+  });
 }
 
 function renderAdminQuestions() {
@@ -105,7 +154,7 @@ function renderAdminQuestions() {
   list.innerHTML = '';
 
   if (questions.length === 0) {
-    list.innerHTML = '<li>No hay preguntas registradas actualmente.</li>';
+    list.innerHTML = '<li>No hay preguntas registradas en la nube.</li>';
     return;
   }
 
@@ -120,10 +169,10 @@ function renderAdminQuestions() {
 }
 
 function clearAllQuestions() {
-  if (confirm('¿Seguro que deseas eliminar TODAS las preguntas?')) {
-    questions = [];
-    localStorage.removeItem('survey_questions');
-    renderAdminQuestions();
+  if (confirm('¿Seguro que deseas eliminar TODAS las preguntas de la nube?')) {
+    saveQuestionsToCloud([], () => {
+      renderAdminQuestions();
+    });
   }
 }
 
@@ -188,11 +237,9 @@ document.getElementById('poll-form').addEventListener('submit', function(e) {
   const submitBtn = document.getElementById('btn-submit');
   const name = document.getElementById('student-name').value.trim();
 
-  // Bloquear botón mientras envía
   submitBtn.disabled = true;
   submitBtn.textContent = 'Enviando respuestas...';
 
-  // Compilar respuestas en formato HTML limpio para el correo
   let answersHTML = '';
   questions.forEach((q, index) => {
     let answerVal = '';
@@ -223,12 +270,10 @@ document.getElementById('poll-form').addEventListener('submit', function(e) {
 
   emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
     .then(() => {
-      // Ocultar formulario y mostrar agradecimiento con audio
       document.getElementById('poll-form').classList.add('hidden');
       const thankYouMsg = document.getElementById('thank-you-message');
       thankYouMsg.classList.remove('hidden');
 
-      // Reproducir audio automáticamente
       const audioElement = document.getElementById('survey-audio');
       if (audioElement) {
         audioElement.play().catch(err => {
