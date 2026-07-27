@@ -15,7 +15,7 @@ const JSONBIN_MASTER_KEY = "$2a$10$jeatA89HqzJB/Co/naO1Z.7peyWb/OURz.26nLWmIkzXA
 })();
 
 // Clave para el Panel Administrador
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "Hola123";
 
 let questions = [];
 
